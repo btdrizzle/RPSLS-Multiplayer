@@ -1,0 +1,13 @@
+body {
+    background-color: white;
+}
+h1 {
+    font-family: 'Bangers', cursive;
+}
+#middle > img {
+    max-height: 300px;
+}
+#chat {
+    height: 150px;
+    overflow-y: scroll;
+}
