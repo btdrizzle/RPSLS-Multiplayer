@@ -3,10 +3,10 @@ var config = {
     authDomain: "rpsls-2d398.firebaseapp.com",
     databaseURL: "https://rpsls-2d398.firebaseio.com",
     projectId: "rpsls-2d398",
-    storageBucket: "",
+    storageBucket: "rpsls-2d398.appspot.com",
     messagingSenderId: "445764066556"
-};
-firebase.initializeApp(config);
+  };
+  firebase.initializeApp(config);
 var database = firebase.database();
 
 var connectionsRef = database.ref("/connections");
