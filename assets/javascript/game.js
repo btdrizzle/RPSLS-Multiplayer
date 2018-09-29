@@ -12,37 +12,59 @@ var database = firebase.database();
 var connectionsRef = database.ref("/connections");
 var connectedRef = database.ref(".info/connected");
 var chatRef = database.ref("/chat");
+var playerRef1 = database.ref("/Player1");
+var playerRef2 = database.ref("/Player2");
 
-var userInfo = {name: "Guest",isPlayer1:false,isPlayer2:false}; 
+localStorage.clear();
+var userInfo = {name: "Guest",player:"none"}; 
+localStorage.setItem('name',userInfo.name);
 
-
-connectedRef.on("value", function(snap) {
-    if (snap.val()) {
-        var text =`${userInfo.name} connected!`;
-        chatRef.push(text);
-        console.log(text);
-        var user = connectionsRef.push(userInfo);
-        user.onDisconnect().remove();
-    }
-});
-
+//connectedRef.on("value", function(snap) {
+  //  if (snap.val()) {
+    //    var text =`${localStorage.getItem('name')} connected!`;
+      //  chatRef.push(text);
+     //   console.log(text);
+       // var con = connectionsRef.push(true);
+       // con.onDisconnect().remove();
+    //}
+//});
+var uploadPlayer;
 
 $(document).on('click','#save-name',function() {
     event.preventDefault();
-    var name = $('#player-name').val().trim();
-    console.log(name);
-    connectionsRef.set({
-        name:name,
-        isPlayer1:true,
-    })
-})
+    var newName = $('#player-name').val().trim();
+    var oldName = localStorage.getItem('name');
+    userInfo.name = newName;
+    console.log(userInfo.name);
+    chatRef.push(`${oldName} changed name to ${userInfo.name}`);
+    localStorage.setItem('name',userInfo.name);
+    $('#player-name').val('');
+    
+    //Now to look at the info in the database
+    database.ref().once('value')
+        .then(function(dataSnapshot) {
+            var p1 = dataSnapshot.child("Player1").exists();
+            var p2 = dataSnapshot.child("Player2").exists()
+            if(!p1 && !p2) {
+                userInfo.player = "Player 1";
+                localStorage.setItem('player',userInfo.player);
+                chatRef.push(`${localStorage.getItem('name')} is now ${localStorage.getItem('player')}`);
+                var record = {wins:0,losses:0};
+                uploadPlayer = playerRef1.update(record);
+                playerRef1.onDisconnect().remove(); 
+                
+            }
+  });
 
+})
+// This is all chat info.  Creating chat, adding to chat, etc.
 $(document).on('click','#chat-submit',function() {
     event.preventDefault();
     var text = $('#chat-text').val().trim();
-    chatRef.push(`${userInfo.name}: ${text}`);
+    chatRef.push(`${localStorage.getItem('name')}: ${text}`);
     $('#chat-text').val('');
 })
+//This populates the chat box at page open and at each chat addition
 chatRef.on("child_added", function(childSnapshot) {
     var p = $('<p>');
     p.append(childSnapshot.val());
