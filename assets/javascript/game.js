@@ -15,6 +15,7 @@ var chatRef = database.ref("/chat");
 var playerRef1 = database.ref("/Player1");
 var playerRef2 = database.ref("/Player2");
 
+
 //Local storage info - storing player name and if player 1 or 2
 localStorage.clear();
 var userInfo = {
@@ -38,6 +39,8 @@ var RPSLS = [{
 }];
 var player1Choice;
 var player2Choice;
+var Player1Record = "0 wins and 0 losses";
+var Player2Record = "0 wins and 0 losses";
 var choice;
 var whoAmI;
 
@@ -50,16 +53,34 @@ function game() {
     
     console.log(whoAmI);
 
-    database.ref(`/${whoAmI}`).child('zchoice').update(choice);
-
+    database.ref(`${whoAmI}`).update(choice);
+}
+function game2() {
     var answer = ((player1Choice - player2Choice) + 5) % 5;
+    $('#player1Game').text(`Player 1 Chose ${player1Choice}`);
+    $('#player2Game').text(`Player 2 Chose ${player2Choice}`);
+    var d = $('<div>');
+    var p = $('<p>');
+    var b = $('<button>');
+    b.attr('id','restart');
+    b.text('Click to Play Again!');
 
     if (answer === 0) {
-        // The game is a tie!
+        p.text = "The game is a tie!"
+        d.append(p);
+        d.append(b);
+        $('#middle').html(d);
     } else if (answer === 1 || answer === 2) {
-        //Player 1 wins!
+        p.text = "Player 1 wins!!"
+        d.append(p);
+        d.append(b);
+        $('#middle').html(d);
+        
     } else {
-        //Player 2 wins!
+        p.text = "Player 2 wins!!"
+        d.append(p);
+        d.append(b);
+        $('#middle').html(d);
     }
 }
 playerRef1.once("child_added", function (childSnapshot) {
@@ -228,7 +249,37 @@ chatRef.on("value", function (snapshot) {
 // the rest first
 
 $(document).on('click', '.btn', function() {
-    choice = $(this).attr('data-name');
+    choice = {zchoice:$(this).attr('data-name')};
     whoAmI = $(this).attr('data-player');
+    $('#player1Game').empty();
+    $('#player2Game').empty();
     game();
 })
+playerRef1.on('child_changed',function(childSnapshot) {
+    player1Record = `${childSnapshot.wins.val()} wins and ${childSnapshot.losses.val()} losses`;
+    $('#player1Stats').text(player1Record);
+    database.ref().once('value')
+        .then(function (dataSnapshot) {
+            var p1 = dataSnapshot.child("Player1").child('zchoice').val();
+            var p1 = dataSnapshot.child("Player2").child('zchoice').val();
+            if((p1 != '') && (p2 != '')) {
+                player1Choice = p1;
+                player2Choice = p2;
+                game2();
+            }
+        })
+});
+playerRef2.on('child_changed',function(childSnapshot) {
+    player1Record = `${childSnapshot.wins.val()} wins and ${childSnapshot.losses.val()} losses`;
+    $('#player2Stats').text(player1Record);
+    database.ref().once('value')
+        .then(function (dataSnapshot) {
+            var p1 = dataSnapshot.child("Player1").child('zchoice').val();
+            var p1 = dataSnapshot.child("Player2").child('zchoice').val();
+            if((p1 != '') && (p2 != '')) {
+                player1Choice = p1;
+                player2Choice = p2;
+                game2();
+            }
+        })
+});
