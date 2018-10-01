@@ -14,13 +14,20 @@ var connectedRef = database.ref(".info/connected");
 var chatRef = database.ref("/chat");
 var playerRef1 = database.ref("/Player1");
 var playerRef2 = database.ref("/Player2");
-
+var wins = 0;
+var losses = 0;
+var p1Wins;
+var p1Losses;
+var p2Wins;
+var p2Losses;
+var p1New;
+var p2New;
 
 //Local storage info - storing player name and if player 1 or 2
 localStorage.clear();
 var userInfo = {
     name: "Guest",
-    player: "none"
+    player: "none",
 };
 localStorage.setItem('name', userInfo.name);
 
@@ -37,10 +44,21 @@ var RPSLS = [{
 }, {
     Scissors: 5
 }];
+var RPSLS1 = {
+    Rock: 1,
+
+    Spock: 2,
+
+    Paper: 3,
+
+    Lizard: 4,
+
+    Scissors: 5,
+};
 var player1Choice;
 var player2Choice;
-var Player1Record = "0 wins and 0 losses";
-var Player2Record = "0 wins and 0 losses";
+var player1Record = "0 wins and 0 losses";
+var player2Record = "0 wins and 0 losses";
 var choice;
 var whoAmI;
 
@@ -53,35 +71,66 @@ function game() {
     
     console.log(whoAmI);
 
-    database.ref(`${whoAmI}`).update(choice);
+    database.ref(`/${whoAmI}`).update(choice);
 }
 function game2() {
-    var answer = ((player1Choice - player2Choice) + 5) % 5;
+    var answer = ((RPSLS1[player1Choice] - RPSLS1[player2Choice]) + 5) % 5;
+    console.log(RPSLS1[player1Choice]);
+    console.log(RPSLS1[player2Choice]);
     $('#player1Game').text(`Player 1 Chose ${player1Choice}`);
     $('#player2Game').text(`Player 2 Chose ${player2Choice}`);
     var d = $('<div>');
     var p = $('<p>');
     var b = $('<button>');
     b.attr('id','restart');
+    b.addClass('newGame btn btn-dark');
     b.text('Click to Play Again!');
 
     if (answer === 0) {
-        p.text = "The game is a tie!"
+        p.text("The game is a tie!");
         d.append(p);
         d.append(b);
         $('#middle').html(d);
     } else if (answer === 1 || answer === 2) {
-        p.text = "Player 1 wins!!"
+        p.text("Player 1 wins!!");
         d.append(p);
         d.append(b);
         $('#middle').html(d);
+        database.ref().once('value')
+        .then(function (dataSnapshot) {
+            p1Wins = parseInt(dataSnapshot.child("/Player1").child("wins").val());
+            p1Wins = p1Wins + 1;
+            console.log(p1Wins);
+            p2Losses = parseInt(dataSnapshot.child("/Player2").child("losses").val());
+            p2Losses = p2Losses + 1;
+            console.log(p2Losses);
+            var addWins = {wins:`${p1Wins}`};
+            var addLosses = {losses:`${p2Losses}`};
+            playerRef1.update(addWins);
+            playerRef2.update(addLosses);
+        });
         
+
+
     } else {
-        p.text = "Player 2 wins!!"
+        p.text("Player 2 wins!!");
         d.append(p);
         d.append(b);
         $('#middle').html(d);
+        database.ref().once('value')
+        .then(function (dataSnapshot) {
+            p2Wins = parseInt(dataSnapshot.child("/Player2").child("wins").val());
+            p2Wins = p2Wins + 1;
+            p1Losses = parseInt(dataSnapshot.child("/Player1").child("losses").val());
+            p1Losses = p1Losses + 1;
+            var addWins = {wins:`${p2Wins}`};
+            var addLosses = {losses:`${p1Losses}`};
+            playerRef2.update(addWins);
+            playerRef1.update(addLosses);
+        });
+        
     }
+
 }
 playerRef1.once("child_added", function (childSnapshot) {
     database.ref().once('value')
@@ -144,7 +193,7 @@ function createButtons() {
             choices.forEach(function (key) {
                 var p = $('<p>');
                 var button = $('<button>');
-                button.addClass('btn btn-dark');
+                button.addClass('play btn btn-dark');
                 button.attr('data-name', key);
                 button.attr('data-value', choice[key]);
                 button.attr('data-player', localStorage.getItem('player'));
@@ -248,37 +297,52 @@ chatRef.on("value", function (snapshot) {
 //The following is game stuff and this stuff is pretty easy.... gotta get
 // the rest first
 
-$(document).on('click', '.btn', function() {
+$(document).on('click', '.play', function() {
     choice = {zchoice:$(this).attr('data-name')};
     whoAmI = $(this).attr('data-player');
     $('#player1Game').empty();
     $('#player2Game').empty();
     game();
 })
+$(document).on('click','.newGame',function() {
+    var img = $('<img>');
+    img.addClass('mx-auto');
+    img.attr('id','pic');
+    img.attr('src','./assets/images/Rock_Paper_Scissors_Lizard_Spock_en.svg');
+    $('#middle').html(img);
+    $('#player1Game').empty();
+    $('#player2Game').empty();
+    createButtons();
+
+})
 playerRef1.on('child_changed',function(childSnapshot) {
-    player1Record = `${childSnapshot.wins.val()} wins and ${childSnapshot.losses.val()} losses`;
+    player1Record = `${childSnapshot.child('wins').val()} wins and ${childSnapshot.child('losses').val()} losses`;
     $('#player1Stats').text(player1Record);
     database.ref().once('value')
         .then(function (dataSnapshot) {
-            var p1 = dataSnapshot.child("Player1").child('zchoice').val();
-            var p1 = dataSnapshot.child("Player2").child('zchoice').val();
-            if((p1 != '') && (p2 != '')) {
-                player1Choice = p1;
-                player2Choice = p2;
+            p1New = dataSnapshot.child("Player1").child('zchoice').val();
+            p2New = dataSnapshot.child("Player2").child('zchoice').val();
+            if((p1New != '') && (p2New != '')) {
+                player1Choice = p1New;
+                player2Choice = p2New;
+                localStorage.setItem('player1Choice',player1Choice);
+                localStorage.setItem('player2Choice',player2Choice);
                 game2();
             }
         })
 });
 playerRef2.on('child_changed',function(childSnapshot) {
-    player1Record = `${childSnapshot.wins.val()} wins and ${childSnapshot.losses.val()} losses`;
+    player1Record = `${childSnapshot.child('wins').val()} wins and ${childSnapshot.child('losses').val()} losses`;
     $('#player2Stats').text(player1Record);
     database.ref().once('value')
         .then(function (dataSnapshot) {
-            var p1 = dataSnapshot.child("Player1").child('zchoice').val();
-            var p1 = dataSnapshot.child("Player2").child('zchoice').val();
-            if((p1 != '') && (p2 != '')) {
-                player1Choice = p1;
-                player2Choice = p2;
+            p1New = dataSnapshot.child("Player1").child('zchoice').val();
+            p2New = dataSnapshot.child("Player2").child('zchoice').val();
+            if((p1New != '') && (p2New != '')) {
+                player1Choice = p1New;
+                player2Choice = p2New;
+                localStorage.setItem('player1Choice',player1Choice);
+                localStorage.setItem('player2Choice',player2Choice);
                 game2();
             }
         })
