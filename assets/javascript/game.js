@@ -17,9 +17,13 @@ var playerRef2 = database.ref("/Player2");
 var wins = 0;
 var losses = 0;
 var p1Wins;
+var p1NewWins;
 var p1Losses;
+var p1NewLosses;
 var p2Wins;
+var p2NewWins;
 var p2Losses;
+var p2NewLosses;
 var p1New;
 var p2New;
 
@@ -85,6 +89,9 @@ function game2() {
     b.attr('id','restart');
     b.addClass('newGame btn btn-dark');
     b.text('Click to Play Again!');
+    newChoice = {zchoice:''}
+    playerRef1.update(newChoice);
+    playerRef2.update(newChoice);
 
     if (answer === 0) {
         p.text("The game is a tie!");
@@ -99,13 +106,11 @@ function game2() {
         database.ref().once('value')
         .then(function (dataSnapshot) {
             p1Wins = parseInt(dataSnapshot.child("/Player1").child("wins").val());
-            p1Wins = p1Wins + 1;
-            console.log(p1Wins);
             p2Losses = parseInt(dataSnapshot.child("/Player2").child("losses").val());
-            p2Losses = p2Losses + 1;
-            console.log(p2Losses);
-            var addWins = {wins:`${p1Wins}`};
-            var addLosses = {losses:`${p2Losses}`};
+            p1NewWins = p1Wins + 1;
+            p2NewLosses = p2Losses + 1;
+            var addWins = {wins:`${p1NewWins}`};
+            var addLosses = {losses:`${p2NewLosses}`};
             playerRef1.update(addWins);
             playerRef2.update(addLosses);
         });
@@ -120,14 +125,15 @@ function game2() {
         database.ref().once('value')
         .then(function (dataSnapshot) {
             p2Wins = parseInt(dataSnapshot.child("/Player2").child("wins").val());
-            p2Wins = p2Wins + 1;
             p1Losses = parseInt(dataSnapshot.child("/Player1").child("losses").val());
-            p1Losses = p1Losses + 1;
-            var addWins = {wins:`${p2Wins}`};
-            var addLosses = {losses:`${p1Losses}`};
+            p2NewWins = p2Wins + 1;
+            p1NewLosses = p1Losses + 1;
+            var addWins = {wins:`${p2NewWins}`};
+            var addLosses = {losses:`${p1NewLosses}`};
             playerRef2.update(addWins);
             playerRef1.update(addLosses);
-        });
+            });
+        
         
     }
 
@@ -316,10 +322,11 @@ $(document).on('click','.newGame',function() {
 
 })
 playerRef1.on('child_changed',function(childSnapshot) {
-    player1Record = `${childSnapshot.child('wins').val()} wins and ${childSnapshot.child('losses').val()} losses`;
-    $('#player1Stats').text(player1Record);
+    
     database.ref().once('value')
         .then(function (dataSnapshot) {
+            player1Record = `${dataSnapshot.child('/Player1').child('wins').val()} wins and ${dataSnapshot.child('/Player1').child('losses').val()} losses`;
+            $('#player1Stats').text(player1Record);
             p1New = dataSnapshot.child("Player1").child('zchoice').val();
             p2New = dataSnapshot.child("Player2").child('zchoice').val();
             if((p1New != '') && (p2New != '')) {
@@ -332,10 +339,10 @@ playerRef1.on('child_changed',function(childSnapshot) {
         })
 });
 playerRef2.on('child_changed',function(childSnapshot) {
-    player1Record = `${childSnapshot.child('wins').val()} wins and ${childSnapshot.child('losses').val()} losses`;
-    $('#player2Stats').text(player1Record);
     database.ref().once('value')
         .then(function (dataSnapshot) {
+            player2Record = `${dataSnapshot.child("/Player2").child('wins').val()} wins and ${dataSnapshot.child('/Player2').child('losses').val()} losses`;
+            $('#player2Stats').text(player2Record);
             p1New = dataSnapshot.child("Player1").child('zchoice').val();
             p2New = dataSnapshot.child("Player2").child('zchoice').val();
             if((p1New != '') && (p2New != '')) {
